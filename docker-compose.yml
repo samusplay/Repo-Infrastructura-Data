@@ -1,0 +1,122 @@
+# infrastructura-data/docker-compose.yml
+version: '3.8'
+
+services:
+  # 1. Base de datos para Ingesta
+  db-ingestion:
+    image: postgres:15-alpine
+    container_name: db-ingestion
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_ingestion
+    ports:
+      - "5432:5432" # Accesible en localhost:5432
+    volumes:
+      - pg_data_ingestion:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 2. Base de datos para Transformación
+  db-transformation:
+    image: postgres:15-alpine
+    container_name: db-transformation
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_transformation
+    ports:
+      - "5433:5432" # Accesible en localhost:5433
+    volumes:
+      - pg_data_transformation:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 3. Base de datos para Analítica y Scoring
+  db-analytics:
+    image: postgres:15-alpine
+    container_name: db-analytics
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_analytics
+    ports:
+      - "5434:5432" # Accesible en localhost:5434
+    volumes:
+      - pg_data_analytics:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 4. Base de datos para Machine Learning
+  db-ml:
+    image: postgres:15-alpine
+    container_name: db-ml
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_ml
+    ports:
+      - "5435:5432" # Accesible en localhost:5435
+    volumes:
+      - pg_data_ml:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 5. Base de datos para Recomendaciones
+  db-recommendations:
+    image: postgres:15-alpine
+    container_name: db-recommendations
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_recommendations
+    ports:
+      - "5436:5432" # Accesible en localhost:5436
+    volumes:
+      - pg_data_recommendations:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 6. Base de datos para Configuración
+  db-configuration:
+    image: postgres:15-alpine
+    container_name: db-configuration
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_configuration
+    ports:
+      - "5437:5432" # Accesible en localhost:5437
+    volumes:
+      - pg_data_configuration:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+  # 7. Base de datos para Auditoría y Trazabilidad
+  db-audit:
+    image: postgres:15-alpine
+    container_name: db-audit
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_audit
+    ports:
+      - "5438:5432" # Accesible en localhost:5438
+    volumes:
+      - pg_data_audit:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
+networks:
+  territorial_network:
+    driver: bridge
+
+# Declaramos los 7 volúmenes independientes para que los datos no se mezclen
+volumes:
+  pg_data_ingestion:
+  pg_data_transformation:
+  pg_data_analytics:
+  pg_data_ml:
+  pg_data_recommendations:
+  pg_data_configuration:
+  pg_data_audit:

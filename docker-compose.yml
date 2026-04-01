@@ -1,7 +1,9 @@
-# infrastructura-data/docker-compose.yml
 version: '3.8'
 
 services:
+  # ==========================================
+  # CAPA DE PERSISTENCIA (BASES DE DATOS)
+  # ==========================================
   # 1. Base de datos para Ingesta
   db-ingestion:
     image: postgres:15-alpine
@@ -107,11 +109,95 @@ services:
     networks:
       - territorial_network
 
+  # ==========================================
+  # CAPA DE MICROSERVICIOS DE NEGOCIO
+  # ==========================================
+  
+  # 8. Microservicio de Ingesta
+  ms-ingestion:
+    build:
+      context: ../ms-ingestion
+      dockerfile: Dockerfile
+    container_name: ms-ingestion
+    env_file:
+      - ../ms-ingestion/.env
+    environment:
+      - APP_PORT=8000
+      # Apunta internamente a db-ingestion en el puerto nativo 5432
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ingestion:5432/db_ingestion
+    volumes:
+      - ../ms-ingestion:/app # Hot Reload activado
+    depends_on:
+      - db-ingestion
+    networks:
+      - territorial_network
+
+  # 9. Microservicio de Transformación
+  ms-transform:
+    build:
+      context: ../ms-transform
+      dockerfile: Dockerfile
+    container_name: ms-transform
+    env_file:
+      - ../ms-transform/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-transformation:5432/db_transformation
+    volumes:
+      - ../ms-transform:/app
+    depends_on:
+      - db-transformation
+    networks:
+      - territorial_network
+
+  # 10. Microservicio de Auditoría
+  ms-auditoria:
+    build:
+      context: ../ms-auditoria
+      dockerfile: Dockerfile
+    container_name: ms-auditoria
+    env_file:
+      - ../ms-auditoria/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-audit:5432/db_audit
+    volumes:
+      - ../ms-auditoria:/app
+    depends_on:
+      - db-audit
+    networks:
+      - territorial_network
+
+  # ==========================================
+  # CAPA DE ORQUESTACIÓN / EXPERIENCIA
+  # ==========================================
+
+  # 11. API Gateway (Punto de entrada único)
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    env_file:
+      - ../api-gateway/.env
+    environment:
+      - APP_PORT=8000
+    ports:
+      # CA 3: Este es el ÚNICO microservicio expuesto al exterior
+      - "8000:8000"
+    volumes:
+      - ../api-gateway:/app
+    depends_on:
+      - ms-ingestion
+      - ms-transform
+      - ms-auditoria
+    networks:
+      - territorial_network
+
 networks:
   territorial_network:
     driver: bridge
 
-# Declaramos los 7 volúmenes independientes para que los datos no se mezclen
 volumes:
   pg_data_ingestion:
   pg_data_transformation:

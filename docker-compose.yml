@@ -103,7 +103,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_audit
     ports:
-      - "5438:5432" # Accesible en localhost:5438
+      - "5438:5438" # Accesible en localhost:5438
     volumes:
       - pg_data_audit:/var/lib/postgresql/data
     networks:
@@ -182,6 +182,8 @@ services:
       - ../api-gateway/.env
     environment:
       - APP_PORT=8000
+      - MS_INGESTION_URL=http://ms-ingestion:8000
+      - FRONTEND_URL=http://localhost:3000
     ports:
       # CA 3: Este es el ÚNICO microservicio expuesto al exterior
       - "8000:8000"
@@ -191,6 +193,26 @@ services:
       - ms-ingestion
       - ms-transform
       - ms-auditoria
+    networks:
+      - territorial_network
+
+  # 12. Frontend Web (Next.js / React)
+  frontend-web:
+    build:
+      context: ../../data-frontend # Ruta a la carpeta de tu frontend
+      dockerfile: Dockerfile
+    container_name: frontend-web
+    ports:
+      - "3000:3000" # Exponemos el frontend en localhost:3000
+    volumes:
+      - ../../data-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      # Para Server Actions dentro de Docker, usamos el nombre del contenedor del Gateway
+      - API_GATEWAY_URL=http://api-gateway:8000
+    depends_on:
+      - api-gateway
     networks:
       - territorial_network
 

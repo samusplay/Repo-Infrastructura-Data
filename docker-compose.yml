@@ -143,6 +143,7 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-transformation:5432/db_transformation
+      - INGESTION_SERVICE_URL=http://ms-ingestion:8000/api/v1/ingesta
     volumes:
       - ../ms-transform:/app
     depends_on:
@@ -184,6 +185,7 @@ services:
       - APP_PORT=8000
       - MS_INGESTION_URL=http://ms-ingestion:8000
       - FRONTEND_URL=http://localhost:3000
+      - MS_TRANSFORM_URL=http://ms-transform:8000
     ports:
       # CA 3: Este es el ÚNICO microservicio expuesto al exterior
       - "8000:8000"

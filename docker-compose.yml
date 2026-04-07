@@ -143,7 +143,7 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-transformation:5432/db_transformation
-      - INGESTION_SERVICE_URL=http://ms-ingestion:8000/api/v1/ingesta
+      - INGESTION_SERVICE_URL=http://ms-ingestion:8000
     volumes:
       - ../ms-transform:/app
     depends_on:

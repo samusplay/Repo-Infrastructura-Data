@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_ingestion
     ports:
-      - "5432:5432" # Accesible en localhost:5432
+      - "5432:5432"
     volumes:
       - pg_data_ingestion:/var/lib/postgresql/data
     networks:
@@ -28,7 +28,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_transformation
     ports:
-      - "5433:5432" # Accesible en localhost:5433
+      - "5433:5432"
     volumes:
       - pg_data_transformation:/var/lib/postgresql/data
     networks:
@@ -43,7 +43,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_analytics
     ports:
-      - "5434:5432" # Accesible en localhost:5434
+      - "5434:5432"
     volumes:
       - pg_data_analytics:/var/lib/postgresql/data
     networks:
@@ -58,7 +58,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_ml
     ports:
-      - "5435:5432" # Accesible en localhost:5435
+      - "5435:5432"
     volumes:
       - pg_data_ml:/var/lib/postgresql/data
     networks:
@@ -73,7 +73,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_recommendations
     ports:
-      - "5436:5432" # Accesible en localhost:5436
+      - "5436:5432"
     volumes:
       - pg_data_recommendations:/var/lib/postgresql/data
     networks:
@@ -88,7 +88,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_configuration
     ports:
-      - "5437:5432" # Accesible en localhost:5437
+      - "5437:5432"
     volumes:
       - pg_data_configuration:/var/lib/postgresql/data
     networks:
@@ -103,7 +103,7 @@ services:
       POSTGRES_PASSWORD: admin_password
       POSTGRES_DB: db_audit
     ports:
-      - "5438:5438" # Accesible en localhost:5438
+      - "5438:5432"
     volumes:
       - pg_data_audit:/var/lib/postgresql/data
     networks:
@@ -123,10 +123,9 @@ services:
       - ../ms-ingestion/.env
     environment:
       - APP_PORT=8000
-      # Apunta internamente a db-ingestion en el puerto nativo 5432
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ingestion:5432/db_ingestion
     volumes:
-      - ../ms-ingestion:/app # Hot Reload activado
+      - ../ms-ingestion:/app
     depends_on:
       - db-ingestion
     networks:
@@ -168,12 +167,50 @@ services:
       - db-audit
     networks:
       - territorial_network
+  
+  # 11. Microservicio de Configuración
+  ms-configuration:
+    build:
+      context: ../ms-configuration
+      dockerfile: Dockerfile
+    container_name: ms-configuration
+    env_file:
+      - ../ms-configuration/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-configuration:5432/db_configuration
+    volumes:
+      - ../ms-configuration:/app
+    depends_on:
+      - db-configuration
+    networks:
+      - territorial_network
+
+  # 12. Microservicio de Analítica (Añadido)
+  ms-analytics:
+    build:
+      context: ../ms-analytics
+      dockerfile: Dockerfile
+    container_name: ms-analytics
+    env_file:
+      - ../ms-analytics/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-analytics:5432/db_analytics
+      - TRANSFORM_SERVICE_URL=http://ms-transform:8000 # <-- AGREGADO: Para conectarse a transformación
+    volumes:
+      - ../ms-analytics:/app
+    depends_on:
+      - db-analytics
+      - ms-transform # <-- Opcional, pero asegura que transform levante primero
+    networks:
+      - territorial_network
 
   # ==========================================
   # CAPA DE ORQUESTACIÓN / EXPERIENCIA
   # ==========================================
 
-  # 11. API Gateway (Punto de entrada único)
+  # 13. API Gateway (Punto de entrada único)
   api-gateway:
     build:
       context: ../api-gateway
@@ -186,8 +223,9 @@ services:
       - MS_INGESTION_URL=http://ms-ingestion:8000
       - FRONTEND_URL=http://localhost:3000
       - MS_TRANSFORM_URL=http://ms-transform:8000
+      - MS_CONFIGURATION_URL=http://ms-configuration:8000
+      - MS_ANALYTICS_URL=http://ms-analytics:8000 # <-- AGREGADO: Referencia al nuevo servicio
     ports:
-      # CA 3: Este es el ÚNICO microservicio expuesto al exterior
       - "8000:8000"
     volumes:
       - ../api-gateway:/app
@@ -195,23 +233,24 @@ services:
       - ms-ingestion
       - ms-transform
       - ms-auditoria
+      - ms-configuration
+      - ms-analytics # <-- AGREGADO: Dependencia
     networks:
       - territorial_network
 
-  # 12. Frontend Web (Next.js / React)
+  # 14. Frontend Web (Next.js / React)
   frontend-web:
     build:
-      context: ../../data-frontend # Ruta a la carpeta de tu frontend
+      context: ../../data-frontend
       dockerfile: Dockerfile
     container_name: frontend-web
     ports:
-      - "3000:3000" # Exponemos el frontend en localhost:3000
+      - "3000:3000"
     volumes:
       - ../../data-frontend:/app
       - /app/node_modules
       - /app/.next
     environment:
-      # Para Server Actions dentro de Docker, usamos el nombre del contenedor del Gateway
       - API_GATEWAY_URL=http://api-gateway:8000
     depends_on:
       - api-gateway

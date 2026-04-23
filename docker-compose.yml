@@ -198,6 +198,7 @@ services:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-analytics:5432/db_analytics
       - TRANSFORM_SERVICE_URL=http://ms-transform:8000 # <-- AGREGADO: Para conectarse a transformación
+      - CONFIG_SERVICE_URL=http://ms-configuration:8000
     volumes:
       - ../ms-analytics:/app
     depends_on:

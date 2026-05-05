@@ -112,7 +112,7 @@ services:
   # ==========================================
   # CAPA DE MICROSERVICIOS DE NEGOCIO
   # ==========================================
-  
+
   # 8. Microservicio de Ingesta
   ms-ingestion:
     build:
@@ -124,6 +124,8 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ingestion:5432/db_ingestion
+    ports:
+      - "8001:8000"
     volumes:
       - ../ms-ingestion:/app
     depends_on:
@@ -143,6 +145,8 @@ services:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-transformation:5432/db_transformation
       - INGESTION_SERVICE_URL=http://ms-ingestion:8000
+    ports:
+      - "8002:8000"
     volumes:
       - ../ms-transform:/app
     depends_on:
@@ -161,13 +165,15 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-audit:5432/db_audit
+    ports:
+      - "8003:8000"
     volumes:
       - ../ms-auditoria:/app
     depends_on:
       - db-audit
     networks:
       - territorial_network
-  
+
   # 11. Microservicio de Configuración
   ms-configuration:
     build:
@@ -179,6 +185,8 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-configuration:5432/db_configuration
+    ports:
+      - "8004:8000"
     volumes:
       - ../ms-configuration:/app
     depends_on:
@@ -186,7 +194,7 @@ services:
     networks:
       - territorial_network
 
-  # 12. Microservicio de Analítica (Añadido)
+  # 12. Microservicio de Analítica
   ms-analytics:
     build:
       context: ../ms-analytics
@@ -197,13 +205,35 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-analytics:5432/db_analytics
-      - TRANSFORM_SERVICE_URL=http://ms-transform:8000 # <-- AGREGADO: Para conectarse a transformación
+      - TRANSFORM_SERVICE_URL=http://ms-transform:8000
       - CONFIG_SERVICE_URL=http://ms-configuration:8000
+    ports:
+      - "8005:8000"
     volumes:
       - ../ms-analytics:/app
     depends_on:
       - db-analytics
-      - ms-transform # <-- Opcional, pero asegura que transform levante primero
+      - ms-transform
+    networks:
+      - territorial_network
+
+  # 13. Microservicio de Machine Learning
+  ms-ml:
+    build:
+      context: ../ms-ml
+      dockerfile: Dockerfile
+    container_name: ms-ml
+    env_file:
+      - ../ms-ml/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ml:5432/db_ml
+    ports:
+      - "8006:8000"
+    volumes:
+      - ../ms-ml:/app
+    depends_on:
+      - db-ml
     networks:
       - territorial_network
 
@@ -211,7 +241,7 @@ services:
   # CAPA DE ORQUESTACIÓN / EXPERIENCIA
   # ==========================================
 
-  # 13. API Gateway (Punto de entrada único)
+  # 14. API Gateway (Punto de entrada único)
   api-gateway:
     build:
       context: ../api-gateway
@@ -225,7 +255,8 @@ services:
       - FRONTEND_URL=http://localhost:3000
       - MS_TRANSFORM_URL=http://ms-transform:8000
       - MS_CONFIGURATION_URL=http://ms-configuration:8000
-      - MS_ANALYTICS_URL=http://ms-analytics:8000 # <-- AGREGADO: Referencia al nuevo servicio
+      - MS_ANALYTICS_URL=http://ms-analytics:8000
+      - MS_ML_URL=http://ms-ml:8000
     ports:
       - "8000:8000"
     volumes:
@@ -235,11 +266,12 @@ services:
       - ms-transform
       - ms-auditoria
       - ms-configuration
-      - ms-analytics # <-- AGREGADO: Dependencia
+      - ms-analytics
+      - ms-ml
     networks:
       - territorial_network
 
-  # 14. Frontend Web (Next.js / React)
+  # 15. Frontend Web (Next.js / React)
   frontend-web:
     build:
       context: ../../data-frontend

@@ -79,6 +79,21 @@ services:
     networks:
       - territorial_network
 
+  # 5b. Model Store para Recomendaciones
+  db-model-store:
+    image: postgres:15-alpine
+    container_name: db-model-store
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: db_model_store
+    ports:
+      - "5439:5432"
+    volumes:
+      - pg_data_model_store:/var/lib/postgresql/data
+    networks:
+      - territorial_network
+
   # 6. Base de datos para Configuración
   db-configuration:
     image: postgres:15-alpine
@@ -237,11 +252,37 @@ services:
     networks:
       - territorial_network
 
+  # 14. Microservicio de Recomendaciones
+  ms-recommendations:
+    build:
+      context: ../ms-recommendations
+      dockerfile: Dockerfile
+    container_name: ms-recommendations
+    env_file:
+      - ../ms-recommendations/.env
+    environment:
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-recommendations:5432/db_recommendations
+      - MODEL_STORE_URL=postgresql+psycopg2://admin:admin_password@db-model-store:5432/db_model_store
+      - MS_ANALYTICS_URL=http://ms-analytics:8000
+      - MS_ML_URL=http://ms-ml:8000
+    ports:
+      - "8007:8000"
+    volumes:
+      - ../ms-recommendations:/app
+    depends_on:
+      - db-recommendations
+      - db-model-store
+      - ms-analytics
+      - ms-ml
+    networks:
+      - territorial_network
+
   # ==========================================
   # CAPA DE ORQUESTACIÓN / EXPERIENCIA
   # ==========================================
 
-  # 14. API Gateway (Punto de entrada único)
+  # 15. API Gateway (Punto de entrada único)
   api-gateway:
     build:
       context: ../api-gateway
@@ -257,6 +298,7 @@ services:
       - MS_CONFIGURATION_URL=http://ms-configuration:8000
       - MS_ANALYTICS_URL=http://ms-analytics:8000
       - MS_ML_URL=http://ms-ml:8000
+      - MS_RECOMMENDATIONS_URL=http://ms-recommendations:8000
     ports:
       - "8000:8000"
     volumes:
@@ -268,10 +310,11 @@ services:
       - ms-configuration
       - ms-analytics
       - ms-ml
+      - ms-recommendations
     networks:
       - territorial_network
 
-  # 15. Frontend Web (Next.js / React)
+  # 16. Frontend Web (Next.js / React)
   frontend-web:
     build:
       context: ../../data-frontend
@@ -300,5 +343,6 @@ volumes:
   pg_data_analytics:
   pg_data_ml:
   pg_data_recommendations:
+  pg_data_model_store:
   pg_data_configuration:
   pg_data_audit:

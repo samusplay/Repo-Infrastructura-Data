@@ -4,7 +4,6 @@ services:
   # ==========================================
   # CAPA DE PERSISTENCIA (BASES DE DATOS)
   # ==========================================
-  # 1. Base de datos para Ingesta
   db-ingestion:
     image: postgres:15-alpine
     container_name: db-ingestion
@@ -19,7 +18,6 @@ services:
     networks:
       - territorial_network
 
-  # 2. Base de datos para Transformación
   db-transformation:
     image: postgres:15-alpine
     container_name: db-transformation
@@ -34,7 +32,6 @@ services:
     networks:
       - territorial_network
 
-  # 3. Base de datos para Analítica y Scoring
   db-analytics:
     image: postgres:15-alpine
     container_name: db-analytics
@@ -49,7 +46,6 @@ services:
     networks:
       - territorial_network
 
-  # 4. Base de datos para Machine Learning
   db-ml:
     image: postgres:15-alpine
     container_name: db-ml
@@ -64,7 +60,6 @@ services:
     networks:
       - territorial_network
 
-  # 5. Base de datos para Recomendaciones
   db-recommendations:
     image: postgres:15-alpine
     container_name: db-recommendations
@@ -79,7 +74,6 @@ services:
     networks:
       - territorial_network
 
-  # 5b. Model Store para Recomendaciones
   db-model-store:
     image: postgres:15-alpine
     container_name: db-model-store
@@ -94,7 +88,6 @@ services:
     networks:
       - territorial_network
 
-  # 6. Base de datos para Configuración
   db-configuration:
     image: postgres:15-alpine
     container_name: db-configuration
@@ -109,7 +102,6 @@ services:
     networks:
       - territorial_network
 
-  # 7. Base de datos para Auditoría y Trazabilidad
   db-audit:
     image: postgres:15-alpine
     container_name: db-audit
@@ -128,7 +120,6 @@ services:
   # CAPA DE MICROSERVICIOS DE NEGOCIO
   # ==========================================
 
-  # 8. Microservicio de Ingesta
   ms-ingestion:
     build:
       context: ../ms-ingestion
@@ -148,7 +139,6 @@ services:
     networks:
       - territorial_network
 
-  # 9. Microservicio de Transformación
   ms-transform:
     build:
       context: ../ms-transform
@@ -169,7 +159,6 @@ services:
     networks:
       - territorial_network
 
-  # 10. Microservicio de Auditoría
   ms-auditoria:
     build:
       context: ../ms-auditoria
@@ -189,7 +178,6 @@ services:
     networks:
       - territorial_network
 
-  # 11. Microservicio de Configuración
   ms-configuration:
     build:
       context: ../ms-configuration
@@ -209,7 +197,6 @@ services:
     networks:
       - territorial_network
 
-  # 12. Microservicio de Analítica
   ms-analytics:
     build:
       context: ../ms-analytics
@@ -232,7 +219,6 @@ services:
     networks:
       - territorial_network
 
-  # 13. Microservicio de Machine Learning
   ms-ml:
     build:
       context: ../ms-ml
@@ -243,16 +229,18 @@ services:
     environment:
       - APP_PORT=8000
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ml:5432/db_ml
+      - MS_ANALYTICS_URL=http://ms-analytics:8000
+      - CONFIG_SERVICE_URL=http://ms-analytics:8000
     ports:
       - "8006:8000"
     volumes:
       - ../ms-ml:/app
     depends_on:
       - db-ml
+      - ms-analytics
     networks:
       - territorial_network
 
-  # 14. Microservicio de Recomendaciones
   ms-recommendations:
     build:
       context: ../ms-recommendations
@@ -282,7 +270,6 @@ services:
   # CAPA DE ORQUESTACIÓN / EXPERIENCIA
   # ==========================================
 
-  # 15. API Gateway (Punto de entrada único)
   api-gateway:
     build:
       context: ../api-gateway
@@ -314,7 +301,6 @@ services:
     networks:
       - territorial_network
 
-  # 16. Frontend Web (Next.js / React)
   frontend-web:
     build:
       context: ../../data-frontend

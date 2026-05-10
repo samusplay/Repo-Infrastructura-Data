@@ -231,6 +231,7 @@ services:
       - DATABASE_URL=postgresql+psycopg2://admin:admin_password@db-ml:5432/db_ml
       - MS_ANALYTICS_URL=http://ms-analytics:8000
       - CONFIG_SERVICE_URL=http://ms-analytics:8000
+      - MS_AUDIT_URL=http://ms-auditoria:8000
     ports:
       - "8006:8000"
     volumes:
@@ -238,6 +239,7 @@ services:
     depends_on:
       - db-ml
       - ms-analytics
+      - ms-auditoria
     networks:
       - territorial_network
 
@@ -286,6 +288,7 @@ services:
       - MS_ANALYTICS_URL=http://ms-analytics:8000
       - MS_ML_URL=http://ms-ml:8000
       - MS_RECOMMENDATIONS_URL=http://ms-recommendations:8000
+      - MS_AUDIT_URL=http://ms-auditoria:8000
     ports:
       - "8000:8000"
     volumes:
